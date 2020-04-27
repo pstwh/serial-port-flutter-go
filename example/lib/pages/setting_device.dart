@@ -39,6 +39,7 @@ class _SettingDevicePageState extends State<SettingDevicePage> {
                     title: Text(snapshot.data[index].name),
                     subtitle: Text(snapshot.data[index].path),
                     onTap: () {
+                      print(snapshot.data[index]);
                       Provider.of<AppModel>(context, listen: false)
                           .updateDevice(snapshot.data[index]);
                       Navigator.of(context).popUntil(ModalRoute.withName("/"));

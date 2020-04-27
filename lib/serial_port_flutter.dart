@@ -15,12 +15,12 @@ class FlutterSerialPort {
 
   /// List all devices
   static Future<List<Device>> listDevices() async {
-    List devices = await _channel.invokeMethod("getAllDevices");
-    List devicesPath = await _channel.invokeMethod("getAllDevicesPath");
+    List<String> devices = List<String>.from(await _channel.invokeMethod("getAllDevices"));
+    //List<String> devicesPath = await _channel.invokeMethod("getAllDevicesPath");
 
     List<Device> deviceList = List<Device>();
     devices.asMap().forEach((index, deviceName) {
-      deviceList.add(Device(deviceName, devicesPath[index]));
+      deviceList.add(Device(deviceName, devices[index]));
     });
     return deviceList;
   }
@@ -51,9 +51,12 @@ class SerialPort {
 
   bool get isConnected => _deviceConnected;
 
-  /// Stream(Event) coming from Android
+  /// Stream(Event) coming from Native Device
   Stream<Uint8List> get receiveStream {
-    _eventStream = _eventChannel.receiveBroadcastStream().map<Uint8List>((dynamic value) => value);
+    _eventStream = _eventChannel.receiveBroadcastStream().map<Uint8List>((dynamic value) {
+      print(value);
+      return value;
+    });
     return _eventStream;
   }
 

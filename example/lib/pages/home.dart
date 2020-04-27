@@ -118,17 +118,17 @@ class _HomePageState extends State<HomePage> {
                                         _serialPort = serialPort;
                                         isPortOpened = openResult;
                                       });
-                                      _subscription = _serialPort.receiveStream
-                                          .transform(debounceTransformer)
-                                          .listen((recv) {
-                                        print("Receive: $recv");
-                                        String recvData =
-                                            formatReceivedData(recv);
-                                        setState(() {
-                                          _historyData
-                                              .add(Text(">>> $recvData"));
-                                        });
-                                      });
+                                      // _subscription = _serialPort.receiveStream
+                                      //     .transform(debounceTransformer)
+                                      //     .listen((recv) {
+                                      //   print("Receive: $recv");
+                                      //   String recvData =
+                                      //       formatReceivedData(recv);
+                                      //   setState(() {
+                                      //     _historyData
+                                      //         .add(Text(">>> $recvData"));
+                                      //   });
+                                      // });
                                       print("openResult: $openResult");
                                     } else {
                                       bool closeResult =
