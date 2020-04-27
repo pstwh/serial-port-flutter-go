@@ -53,10 +53,7 @@ class SerialPort {
 
   /// Stream(Event) coming from Native Device
   Stream<Uint8List> get receiveStream {
-    _eventStream = _eventChannel.receiveBroadcastStream().map<Uint8List>((dynamic value) {
-      print(value);
-      return value;
-    });
+    _eventStream = _eventChannel.receiveBroadcastStream().map<Uint8List>((dynamic value) => value);
     return _eventStream;
   }
 

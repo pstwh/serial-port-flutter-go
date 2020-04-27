@@ -1,10 +1,11 @@
 package serial_port_flutter
 
 import (
+	"go.bug.st/serial"
+	"github.com/pkg/errors"
+
 	flutter "github.com/go-flutter-desktop/go-flutter"
 	"github.com/go-flutter-desktop/go-flutter/plugin"
-	"go.bug.st/serial"
-	"fmt"
 )
 
 const methodChannelName = "serial_port"
@@ -20,11 +21,6 @@ var _ flutter.Plugin = &SerialPortFlutterPlugin{} // compile-time type check
 
 // InitPlugin initializes the plugin.
 func (p *SerialPortFlutterPlugin) InitPlugin(messenger plugin.BinaryMessenger) error {
-
-	p.stop = make(chan bool)
-
-	eventChannel := plugin.NewEventChannel(messenger, eventChannelName, plugin.StandardMethodCodec{})
-	eventChannel.Handle(p)
 	
 	methodChannel := plugin.NewMethodChannel(messenger, methodChannelName, plugin.StandardMethodCodec{})
 	methodChannel.HandleFunc("getPlatformVersion", p.handlePlatformVersion)
@@ -33,22 +29,26 @@ func (p *SerialPortFlutterPlugin) InitPlugin(messenger plugin.BinaryMessenger) e
 	methodChannel.HandleFunc("write", p.writeDevice)
 	methodChannel.HandleFunc("getAllDevices", p.getAllDevices)
 	methodChannel.HandleFunc("getAllDevicesPath", p.getAllDevicesPath)
+
+	p.stop = make(chan bool)
+
+	eventChannel := plugin.NewEventChannel(messenger, eventChannelName, plugin.StandardMethodCodec{})
+	eventChannel.Handle(p)
 	
 	return nil
 }
 
 func (p *SerialPortFlutterPlugin) OnListen(arguments interface{}, sink *plugin.EventSink) {
-	buff := make([]byte, 100)
-	sum := 0;
+	buff := make([]byte, 128)
+	
 	for {
 		select {
 		case <-p.stop:
 				return
 		default:
-			n, _ := p.Port.Read(buff)
-			fmt.Println(buff)
-			sum += n
-			if sum > 100 {
+			n, err := p.Port.Read(buff)
+			
+			if n == 0 || err != nil {
 				sink.EndOfStream()
 				break
 			}
@@ -67,21 +67,23 @@ func (p *SerialPortFlutterPlugin) handlePlatformVersion(arguments interface{}) (
 }
 
 func (p *SerialPortFlutterPlugin) openDevice(arguments interface{}) (reply interface{}, err error) {
-	//argsMap := arguments.(map[interface{}]interface{})
+	argsMap := arguments.(map[interface{}]interface{})
 
-	//if p.Port != nil {
-		// devicePath := argsMap["devicePath"].(string)
-		// if devicePath == "" {
-		// 	return nil, nil
-		// }
+	devicePath := argsMap["devicePath"].(string)
+	if devicePath == "" {
+		return false, errors.New("Device Path could not be null")
+	}
 	
-	//baudrate := argsMap["baudrate"].(int)
-
-	mode := &serial.Mode{
-		BaudRate: 9600,
+	baudrate := int(argsMap["baudrate"].(int32))
+	if baudrate == -1 {
+		return false, errors.New("Baud Rate could not be null")
 	}
 
-	port, err := serial.Open("/dev/ttyUSB0", mode)
+	mode := &serial.Mode{
+		BaudRate: baudrate,
+	}
+
+	port, err := serial.Open(devicePath, mode)
 	if err != nil {
 		return false, err
 	}
@@ -89,19 +91,19 @@ func (p *SerialPortFlutterPlugin) openDevice(arguments interface{}) (reply inter
 	p.Port = port
 	
 	return true, nil
-	//}
-
-	//return
 }
 
 func (p *SerialPortFlutterPlugin) closeDevice(arguments interface{}) (reply interface{}, err error) {
 	if p.Port != nil {
 		err := p.Port.Close()
+		if err != nil {
+			return false, err
+		}
 
-		return nil, err
+		return true, nil
 	}
 
-	return true, nil
+	return
 }
 
 func (p *SerialPortFlutterPlugin) writeDevice(arguments interface{}) (reply interface{}, err error) {
